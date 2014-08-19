@@ -105,22 +105,32 @@ class SimpleClient(ShowBase):
     
     # Adjust current intention and send it.
     def indicate_movement(self, heading, speed):
-        if self.avatar_owner_view:
+        if self.has_avatar:
             # FIXME: Not really graceful to just ignore this.
             # What if a button was already pressed when we got the OV?
                         
             self.movement_heading += heading
             self.movement_speed += speed
             self.avatar_owner_view.indicateIntent(self.movement_heading, self.movement_speed)
+        else:
+            print("Avatar not complete yet!")
 
     # A DistributedAvatarOV was created, here is it.
     def get_avatar(self, owner_view):
         print("Received avatar OV in client")
         self.avatar_owner_view = owner_view
-        avatar = self.repo.doId2do[owner_view.doId]
-        base.camera.reparent_to(avatar)
-        base.camera.set_pos(0, -20, 10)
-        base.camera.look_at(0, 0, 0)
+        self.taskMgr.add(self.complete_avatar, 'complete avatar')
+
+    def complete_avatar(self, task):
+        try:
+            avatar = self.repo.doId2do[self.avatar_owner_view.doId]
+            base.camera.reparent_to(avatar)
+            base.camera.set_pos(0, -20, 10)
+            base.camera.look_at(0, 0, 0)
+            self.has_avatar = True
+        except KeyError:
+            print("Couldn't complete avatar")
+            return Task.cont
 
     # A DistributedAvatar was created, here is it.
     def get_distributed_avatar(self, avatar):

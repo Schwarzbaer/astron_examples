@@ -14,7 +14,6 @@ from direct.distributed.DistributedNodeAI import DistributedNodeAI
 from direct.distributed.PyDatagram import PyDatagram
 from direct.distributed import MsgTypes
 from direct.distributed.AstronInternalRepository import AstronInternalRepository
-from panda3d.core import loadPrcFileData
 # AI tasks
 from direct.task import Task
 
