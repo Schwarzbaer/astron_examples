@@ -1,0 +1,43 @@
+# The Daemon section describes identification information which can be queried from the MD.
+daemon:
+    name: Core Message Director    # To be used in page titles and intra-MD links.
+
+general:
+    eventlogger: 127.0.0.1:9090
+    dc_files:
+        - simple_example.dc
+
+# Actually just DOGs, not *the* UberDOG.
+uberdogs:
+  - id: 1234
+    class: LoginManager
+    anonymous: true # May be contacted by status New clients to be Established
+
+messagedirector:
+    bind: 127.0.0.1:7199
+
+roles:
+    - type: clientagent
+      bind: 0.0.0.0:6667
+      version: "SimpleExample v0.2"
+      client:
+        type: libastron
+        # Relocate allows a client to send a ClientObjectLocation message to the server to
+        # indicate it would like to change the location of an object owned by that client.
+        # This is a feature specific to the Astron client, a custom client class
+        # could define its own set of configuration values.
+        relocate: true # Default: false
+        add_interest: disabled
+      # Channels defines the range of channels this clientagent can assign to Clients
+      channels:
+          min: 100100
+          max: 299999
+
+    - type: stateserver
+      control: 402000
+
+    - type: eventlogger
+      bind: 127.0.0.1:9090 # REMEMBER: UDP
+      output: ./events-%Y-%m-%d.log
+      rotate_interval: 1d
+

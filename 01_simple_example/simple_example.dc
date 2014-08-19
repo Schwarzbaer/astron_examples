@@ -1,0 +1,30 @@
+// An abstraction for readability
+typedef uint32 doId;
+typedef uint32 zoneId;
+typedef uint64 channel;
+
+// Associate Python mappings with these classes.
+from simple_example import LoginManager/AI/UD
+from simple_example import DistributedMaproot/AI/UD
+from simple_example import DistributedAvatar/AI/OV
+
+// A simple DOG for username/password authentication.
+dclass LoginManager {
+  set_maproot(doId maproot);
+  login(string username, string password) clsend;
+};
+
+// The root object of the map, container for the DistributedAvatars
+dclass DistributedMaproot {
+  createAvatar(channel client) airecv;
+};
+
+// The actual class for avatar control.
+// The idea is that a Client can set its intention for its heading
+// and speed, but only the controlling AI can set its actual
+// position and heading.
+dclass DistributedAvatar {
+  setXYZH(int16 / 1000, int16 / 1000, int16 / 1000, int16 / 50) broadcast required;
+  indicateIntent(int16 / 10, int16 / 10) ownsend airecv;
+};
+
