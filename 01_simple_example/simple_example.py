@@ -36,7 +36,6 @@ class LoginManager(DistributedObjectGlobal):
 
 class LoginManagerAI(DistributedObjectGlobalAI):
     def set_maproot(self, maproot_doId):
-        print "Jabberwock"
         self.sendUpdate("set_maproot", [maproot_doId])
 
 class LoginManagerUD(DistributedObjectGlobalUD):
