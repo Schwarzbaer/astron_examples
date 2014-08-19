@@ -47,8 +47,11 @@ class SimpleServer(ShowBase):
                                        dcSuffix = "UD",
                                        connectMethod = AstronInternalRepository.CM_NET)
         air.connect("127.0.0.1", 7199)
+        
+        air.districtId = air.GameGlobalsId = 10000
+        
         # Create the LoginManager
-        login_manager = air.generateGlobalObject(LoginManagerId, 'LoginManager')
+        self.login_manager = air.generateGlobalObject(LoginManagerId, 'LoginManager')
 
     def startAIShard(self):
         # DO mappings can only be imported once ShowBase has been instantiated.
@@ -62,9 +65,13 @@ class SimpleServer(ShowBase):
                                        connectMethod = AstronInternalRepository.CM_NET)
         air.connect("127.0.0.1", 7199)
 
+        air.districtId = air.GameGlobalsId = 10000
+
         # The map root
         maproot = DistributedMaprootAI(air)
-        air.generateWithRequired(maproot, 0, 0) # No parent / zone
+        maproot.generateWithRequiredAndId(air.districtId, 0, 1) # No parent / zone
+        
+        self.login_manager.set_maproot(air.districtId)
         
         # Setting AI channel
         dg = PyDatagram()

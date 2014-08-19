@@ -108,6 +108,7 @@ class SimpleClient(ShowBase):
         if self.avatar_owner_view:
             # FIXME: Not really graceful to just ignore this.
             # What if a button was already pressed when we got the OV?
+                        
             self.movement_heading += heading
             self.movement_speed += speed
             self.avatar_owner_view.indicateIntent(self.movement_heading, self.movement_speed)

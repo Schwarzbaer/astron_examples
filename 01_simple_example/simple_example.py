@@ -36,14 +36,15 @@ class LoginManager(DistributedObjectGlobal):
 
 class LoginManagerAI(DistributedObjectGlobalAI):
     def set_maproot(self, maproot_doId):
+        print "Jabberwock"
         self.sendUpdate("set_maproot", [maproot_doId])
 
 class LoginManagerUD(DistributedObjectGlobalUD):
     def set_maproot(self, maproot_doId):
         """Tells the LoginManagerUD what maproot to notify on login."""
+        
         self.maproot = DistributedMaprootUD(self.air)
-        #self.maproot.generateWithRequiredAndId(self.maproot, 123456, 0)
-        self.maproot.generateWithRequired(0, 1)
+        self.maproot.generateWithRequiredAndId(maproot_doId, 0, 1)
 
     def login(self, username, password):
         clientId = self.air.get_msg_sender()
@@ -87,13 +88,17 @@ class LoginManagerUD(DistributedObjectGlobalUD):
 
 class DistributedMaproot(DistributedObject):
     pass
+    
+class DistributedMaprootOV(DistributedObjectOV):
+    pass # client gets confused
 
 class DistributedMaprootAI(DistributedObjectAI):
     def generate(self):
         # Inform LoginManager of the maproots doId so that it can
         # trigger the creation of new avatars.
-        login_manager = self.air.generateGlobalObject(LoginManagerId, 'LoginManager')
-        login_manager.set_maproot(self.doId)
+        #login_manager = self.air.generateGlobalObject(LoginManagerId, 'LoginManager')
+        #login_manager.set_maproot(self.doId)
+        pass
     
     def createAvatar(self, clientId):
         # Create the avatar
