@@ -82,10 +82,6 @@ class DistributedMaprootOV(DistributedObjectOV):
 
 class DistributedMaprootAI(DistributedObjectAI):
     def generate(self):
-        # Inform LoginManager of the maproots doId so that it can
-        # trigger the creation of new avatars.
-        #login_manager = self.air.generateGlobalObject(LoginManagerId, 'LoginManager')
-        #login_manager.set_maproot(self.doId)
         pass
     
     def createAvatar(self, clientId):
