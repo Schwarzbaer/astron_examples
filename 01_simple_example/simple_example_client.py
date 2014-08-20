@@ -7,6 +7,7 @@ version_string = "SimpleExample v0.2"
 
 import sys
 from direct.showbase.ShowBase import ShowBase
+from direct.task import Task
 from panda3d.core import URLSpec
 from direct.distributed.AstronClientRepository import AstronClientRepository
 from direct.distributed import MsgTypes
@@ -129,11 +130,12 @@ class SimpleClient(ShowBase):
             base.camera.look_at(0, 0, 0)
             self.has_avatar = True
         except KeyError:
-            print("Couldn't complete avatar")
+            print("Couldn't complete avatar "+str(self.avatar_owner_view.doId))
             return Task.cont
 
     # A DistributedAvatar was created, here is it.
     def get_distributed_avatar(self, avatar):
+        print("Received avatar "+str(avatar.doId))
         avatar.reparent_to(self.map)
 
 # Create and run this client

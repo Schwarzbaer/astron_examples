@@ -48,15 +48,9 @@ class LoginManagerUD(DistributedObjectGlobalUD):
         clientId = self.air.get_msg_sender()
         if (username == "guest") and (password == "guest"):
             # Authenticate a client
-            self.notify.debug("Authenticating client")
-            dg = PyDatagram()
-            dg.addServerHeader(clientId,       # Recipient channel
-                               LoginManagerId, # Sender channel
-                               MsgTypes.CLIENTAGENT_SET_STATE)
             # FIXME: "2" is the magic number for CLIENT_STATE_ESTABLISHED,
             # for which currently no mapping exists.
-            dg.add_uint16(2)
-            self.air.send(dg)
+            self.air.setClientState(clientId, 2)
 
             # The client is now authenticated; create an Avatar
             self.maproot.sendUpdate("createAvatar", # Field to call
@@ -67,13 +61,9 @@ class LoginManagerUD(DistributedObjectGlobalUD):
 
         else:
             # Disconnect for bad auth
-            dg = PyDatagram()
-            dg.addServerHeader(clientId, LoginManagerId, MsgTypes.CLIENTAGENT_EJECT)
-            # "122" is the magic number for login problems.
+            # FIXME: "122" is the magic number for login problems.
             # See https://github.com/Astron/Astron/blob/master/doc/protocol/10-client.md
-            dg.add_uint16(122)
-            dg.add_string("Bad credentials")
-            self.air.send(dg)
+            self.air.eject(clientId, 122, "Bad credentials")
             
             # log login attempt
             self.notify.info("Ejecting client for bad credentials (user: %s)" % (username,))
@@ -88,7 +78,7 @@ class DistributedMaproot(DistributedObject):
     pass
     
 class DistributedMaprootOV(DistributedObjectOV):
-    pass # client gets confused
+    pass
 
 class DistributedMaprootAI(DistributedObjectAI):
     def generate(self):
@@ -107,29 +97,12 @@ class DistributedMaprootAI(DistributedObjectAI):
         # Set the client to be interested in our zone 0. He can't do
         # that himself (or rather: shouldn't be allowed to) as he has
         # no visibility of this object.
-        dg = PyDatagram()
-        dg.addServerHeader(clientId,       # Recipient channel
-                           self.getDoId(), # Sender channel
-                           MsgTypes.CLIENTAGENT_ADD_INTEREST)
-        dg.add_uint16(0)              # interest_id
-        dg.add_uint32(self.getDoId()) # parent_id
-        dg.add_uint32(0)              # zone_id
-        self.air.send(dg)
+        self.air.clientAddInterest(clientId, 0, self.getDoId(), 0) # client, interest, parent, zone
         # Set its owner to the client, upon which in the Clients repo
         # magically OV (OwnerView) is generated.
-        dg = PyDatagram()
-        dg.addServerHeader(avatar.getDoId(),  # Recipient channel
-                           self.getDoId(),    # Sender channel
-                           MsgTypes.STATESERVER_OBJECT_SET_OWNER)
-        dg.add_uint64(clientId)               # owner_channel
-        self.air.send(dg)
+        self.air.setOwner(avatar.getDoId(), clientId)
         # Declare this to be a session object.
-        dg = PyDatagram()
-        dg.addServerHeader(clientId,  # Recipient channel
-                           self.getDoId(),    # Sender channel
-                           MsgTypes.CLIENTAGENT_ADD_SESSION_OBJECT)
-        dg.add_uint32(avatar.getDoId())        # The avatars ID
-        self.air.send(dg)
+        self.air.clientAddSessionObject(clientId, self.getDoId())
 
 # The UberDOG needs this. FIXME: Or maybe just the DC reader because of /UD in .dc?
 class DistributedMaprootUD(DistributedObjectUD):
