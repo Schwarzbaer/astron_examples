@@ -91,9 +91,7 @@ class DistributedMaprootAI(DistributedObjectAI):
     def createAvatar(self, clientId):
         # Create the avatar
         avatar = DistributedAvatarAI(self.air)
-        self.air.generateWithRequired(avatar,
-                                      self.getDoId(), 0, # parentId, zoneId
-                                      optionalFields=[])
+        avatar.generateWithRequiredAndId(self.air.allocateChannel(), self.getDoId(), 0) # random doId, parentId, zoneId
         # Set the client to be interested in our zone 0. He can't do
         # that himself (or rather: shouldn't be allowed to) as he has
         # no visibility of this object.
@@ -141,7 +139,7 @@ class DistributedAvatarAI(DistributedNodeAI):
         self.update_task = base.taskMgr.add(self.update_position, "Avatar position update")
 
     def delete(self):
-        base.taskMgr.remove(self. update_task)
+        base.taskMgr.remove(self.update_task)
 
     def indicateIntent(self, heading, speed):
         if (heading < -1.0) or (heading > 1.0) or (speed < -1.0) or (speed > 1.0):
