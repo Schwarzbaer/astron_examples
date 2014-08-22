@@ -48,6 +48,7 @@ class SimpleClient(ShowBase):
         self.accept("CLIENT_HELLO_RESP", self.client_is_handshaked)
         self.accept("CLIENT_EJECT", self.ejected)
         self.accept("CLIENT_OBJECT_LEAVING", self.avatar_leaves)
+        self.accept("CLIENT_OBJECT_LEAVING_OWNER", self.avatar_leaves_owner)
         self.accept("LOST_CONNECTION", self.lost_connection)
         # Connecting
         url = URLSpec()
@@ -100,6 +101,9 @@ class SimpleClient(ShowBase):
     def avatar_leaves(self, do_id):
         print("Avatar leaving: "+str(do_id))
 
+    def avatar_leaves_owner(self, do_id):
+        print("AvatarOV leaving: "+str(do_id))
+        
     #
     # Interface
     #
