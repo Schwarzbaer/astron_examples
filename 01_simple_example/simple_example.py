@@ -10,26 +10,24 @@ from direct.distributed.DistributedObjectOV import DistributedObjectOV
 # For DOs that are also Panda3D scene graph nodes
 from direct.distributed.DistributedNode import DistributedNode
 from direct.distributed.DistributedNodeAI import DistributedNodeAI
-# Assembling messages
-from direct.distributed.PyDatagram import PyDatagram
-from direct.distributed import MsgTypes
-from direct.distributed.AstronInternalRepository import AstronInternalRepository
 # AI tasks
 from direct.task import Task
 
-import random
 from datetime import datetime
 
 # Constant DO and channel IDs
 from simple_example_globals import LoginManagerId
 
 # Game settings
-avatar_speed = 100.0
-avatar_rotation_speed = 20.0 * 360.0
+avatar_speed = 3.0
+avatar_rotation_speed = 90.0
 
+# -------------------------------------------------------------------
 # LoginManager
-# * Authenticates Client
-# * Makes DistributedMaproot set up and create an avatar
+# * Registers a DistributedMaproot
+# * Authenticates Clients
+# * Makes DistributedMaproot create an avatar for new Clients.
+# -------------------------------------------------------------------
 
 class LoginManager(DistributedObjectGlobal):
     def generateInit(self):
@@ -37,7 +35,7 @@ class LoginManager(DistributedObjectGlobal):
         
     def login(self, username, password):
         # FIXME: Use TLS so that these are encrypted!
-        print(datetime.now().strftime("%H:%M:%S")+" LoginManager.login("+username+", "+password+") in "+str(self.doId))
+        print(datetime.now().strftime("%H:%M:%S")+" LoginManager.login("+username+", <password>) in "+str(self.doId))
         self.sendUpdate("login", [username, password])
 
 class LoginManagerAI(DistributedObjectGlobalAI):
@@ -45,8 +43,8 @@ class LoginManagerAI(DistributedObjectGlobalAI):
         print(datetime.now().strftime("%H:%M:%S")+" LoginManagerAI.generate() for "+str(self.doId))
 
     def set_maproot(self, maproot_doId):
-        self.sendUpdate("set_maproot", [maproot_doId])
         print(datetime.now().strftime("%H:%M:%S")+" LoginManagerAI.set_maproot("+str(maproot_doId)+") in "+str(self.doId))
+        self.sendUpdate("set_maproot", [maproot_doId])
 
 class LoginManagerUD(DistributedObjectGlobalUD):
     def generate(self):
@@ -54,14 +52,13 @@ class LoginManagerUD(DistributedObjectGlobalUD):
 
     def set_maproot(self, maproot_doId):
         """Tells the LoginManagerUD what maproot to notify on login."""
-        
         print(datetime.now().strftime("%H:%M:%S")+" LoginManagerUD.set_maproot("+str(maproot_doId)+") in "+str(self.doId))
         self.maproot = DistributedMaprootUD(self.air)
         self.maproot.generateWithRequiredAndId(maproot_doId, 0, 1)
 
     def login(self, username, password):
         clientId = self.air.get_msg_sender()
-        print(datetime.now().strftime("%H:%M:%S")+" LoginManagerUD.login("+username+", "+password+")  in "+str(self.doId)+" for client "+str(clientId))
+        print(datetime.now().strftime("%H:%M:%S")+" LoginManagerUD.login("+username+", <password>)  in "+str(self.doId)+" for client "+str(clientId))
         if (username == "guest") and (password == "guest"):
             # Authenticate a client
             # FIXME: "2" is the magic number for CLIENT_STATE_ESTABLISHED,
@@ -85,19 +82,22 @@ class LoginManagerUD(DistributedObjectGlobalUD):
             # log login attempt
             self.notify.info("Ejecting client for bad credentials (user: %s)" % (username,))
 
-#
+# -------------------------------------------------------------------
 # DistributedMaproot
 # * has all avatars in its zone 0
 # * generates new avatars
-#
+# -------------------------------------------------------------------
 
-class DistributedMaproot(DistributedObject):
-    def generateInit(self):
-        print(datetime.now().strftime("%H:%M:%S")+" DistributedMaproot.generateInit() for "+str(self.doId))
+#class DistributedMaproot(DistributedObject):
+#    def generateInit(self):
+#        print(datetime.now().strftime("%H:%M:%S")+" DistributedMaproot.generateInit() for "+str(self.doId))
     
-class DistributedMaprootOV(DistributedObjectOV):
-    def generate(self):
-        print(datetime.now().strftime("%H:%M:%S")+" DistributedMaprootOV.generate() for "+str(self.doId))
+#class DistributedMaprootOV(DistributedObjectOV):
+#    def generate(self):
+#        print(datetime.now().strftime("%H:%M:%S")+" DistributedMaprootOV.generate() for "+str(self.doId))
+
+class DistributedMaproot(DistributedObjectAI):
+    pass
 
 class DistributedMaprootAI(DistributedObjectAI):
     def generate(self):
@@ -113,10 +113,13 @@ class DistributedMaprootAI(DistributedObjectAI):
         # Create the avatar
         avatar = DistributedAvatarAI(self.air)
         avatar.generateWithRequiredAndId(self.air.allocateChannel(), self.getDoId(), 0) # random doId, parentId, zoneId
+        self.air.setAI(avatar.doId, self.air.ourChannel)
         # Set the client to be interested in our zone 0. He can't do
         # that himself (or rather: shouldn't be allowed to) as he has
         # no visibility of this object.
-        # We're always using the interest_id 
+        # We're always using the interest_id 0 because different
+        # clients use different ID spaces, so why make things more
+        # complicated?
         self.air.clientAddInterest(clientId, 0, self.getDoId(), 0) # client, interest, parent, zone
         # Set its owner to the client, upon which in the Clients repo
         # magically OV (OwnerView) is generated.
@@ -124,7 +127,6 @@ class DistributedMaprootAI(DistributedObjectAI):
         # Declare this to be a session object.
         self.air.clientAddSessionObject(clientId, self.getDoId())
 
-# The UberDOG needs this. FIXME: Or maybe just the DC reader because of /UD in .dc?
 class DistributedMaprootUD(DistributedObjectUD):
     def generate(self):
         print(datetime.now().strftime("%H:%M:%S")+" DistributedMaprootUD.generate() for "+str(self.doId))
@@ -132,32 +134,38 @@ class DistributedMaprootUD(DistributedObjectUD):
     def create_avatar(self, clientId):
         print(datetime.now().strftime("%H:%M:%S")+" DistributedMaprootUD.create_avatar("+str(clientId)+") in "+str(self.doId))
         self.sendUpdate("createAvatar", # Field to call
-                            [clientId])     # Arguments
+                        [clientId])     # Arguments
 
-#
+# -------------------------------------------------------------------
 # DistributedAvatar
-#
+# * represents players in the scene graph
+# * routes indications of movement intents to AI
+# * updates the actual position and orientation
+# -------------------------------------------------------------------
 
 class DistributedAvatar(DistributedNode):
     def generateInit(self):
-        print(datetime.now().strftime("%H:%M:%S")+" Generated DistributedAvatar "+str(self.doId))
+        print(datetime.now().strftime("%H:%M:%S")+" DistributedAvatar.generateInit() for "+str(self.doId))
         model = base.loader.loadModel("models/smiley")
         model.reparent_to(self)
         model.setH(180.0)
         # Signal app that this is its avatar
         base.messenger.send("distributed_avatar", [self])
+
+    def delete(self):
+        print(datetime.now().strftime("%H:%M:%S")+" DistributedAvatar.delete() for "+str(self.doId))
         
     def setXYZH(self, *args):
         DistributedNode.setXYZH(self, *args)
-        
-    def delete(self):
-        print("Avatar got removed.")
 
 class DistributedAvatarOV(DistributedObjectOV):
     def generateInit(self):
         # Make yourself known to the client
         print(datetime.now().strftime("%H:%M:%S")+" DistributedAvatarOV.generate() for "+str(self.doId))
         base.messenger.send("avatar", [self])
+
+    def delete(self):
+        print(datetime.now().strftime("%H:%M:%S")+" DistributedAvatarOV.delete() for "+str(self.doId))
         
     def indicateIntent(self, heading, speed):
         self.sendUpdate("indicateIntent", [heading, speed])
@@ -183,7 +191,7 @@ class DistributedAvatarAI(DistributedNodeAI):
     
     def update_position(self, task):
         if (self.heading != 0.0) or (self.speed != 0.0):
-            dt = task.getDt()
+            dt = globalClock.getDt()
             self.setH((self.getH() + self.heading * avatar_rotation_speed * dt) % 360.0)
             self.setY(self, self.speed * avatar_speed * dt)
             if self.getX() < -10.0:

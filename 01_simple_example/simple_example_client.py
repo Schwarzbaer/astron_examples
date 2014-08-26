@@ -134,7 +134,7 @@ class SimpleClient(ShowBase):
             base.camera.look_at(0, 0, 0)
             self.has_avatar = True
         except KeyError:
-            print("Couldn't complete avatar "+str(self.avatar_owner_view.doId))
+            print("Couldn't complete avatar "+str(self.avatar_owner_view.doId)+", available DOs: "+", ".join([str(doId) for doId in self.repo.doId2do.keys()]))
             return Task.cont
 
     # A DistributedAvatar was created, here is it.
